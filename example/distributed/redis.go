@@ -36,30 +36,35 @@ func main() {
 
 	gf.Start()
 
-	maxItrs := 100
+	maxItrs := 10
+	results := make(chan task.Result, maxItrs)
 
-	results := make(chan task.Result)
-
-	for i := 0; i < maxItrs; i++ {
-		id, _ := gf.Push("testplugin", "Im a random sleeper")
-
-		go func() {
+	ids := make(chan string, maxItrs)
+	go func() {
+		for id := range ids {
 			for {
 				result, ok, _ := gf.GetResult(id)
-				if !ok {
-					time.Sleep(time.Second)
-					continue
+				fmt.Println(id)
+				if ok {
+					fmt.Println("GOT RESULT")
+					results <- result
+					break
 				}
 
-				results <- result
-				if i == maxItrs-1 {
-					close(results)
-				}
-
-				return
+				time.Sleep(time.Second)
 			}
-		}()
+		}
+
+		close(results)
+	}()
+
+	for i := 0; i < maxItrs; i++ {
+		id, _ := gf.Push("doubler", fmt.Sprintf(`{"N": %d}`, i))
+		fmt.Println("GOT ID BACK: ", id)
+		ids <- id
 	}
+
+	close(ids)
 
 	i := 0
 	for r := range results {

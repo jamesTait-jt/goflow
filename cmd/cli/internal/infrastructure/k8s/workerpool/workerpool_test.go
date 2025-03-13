@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/jamesTait-jt/goflow/cmd/cli/internal/config"
+	"github.com/jamesTait-jt/goflow/cmd/cli/internal/infrastructure"
 	"github.com/jamesTait-jt/goflow/cmd/cli/internal/infrastructure/k8s/redis"
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
@@ -127,7 +128,7 @@ func TestDeployment(t *testing.T) {
 
 		assert.Len(t, deployment.Spec.Template.Spec.Containers, 1)
 		workerpoolContainer := deployment.Spec.Template.Spec.Containers[0]
-		assert.Equal(t, workerpoolContainerName, *workerpoolContainer.Name)
+		assert.Equal(t, infrastructure.WorkerpoolContainerName, *workerpoolContainer.Name)
 		assert.Equal(t, conf.Workerpool.Image, *workerpoolContainer.Image)
 		assert.Equal(t, apiv1.PullIfNotPresent, *workerpoolContainer.ImagePullPolicy)
 		assert.Equal(t, []string{

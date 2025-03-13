@@ -48,16 +48,29 @@ func (d *DeploymentManager) DeployMessageBroker() error {
 	}
 
 	if !containerInfo.Exists {
-		err = d.client.PullImage(d.conf.Redis.Image)
-		if err != nil {
+		if err = d.client.PullImage(d.conf.Redis.Image); err != nil {
 			return fmt.Errorf("failed to pull redis image: %v", err)
+		}
+
+		containerPort, err := nat.NewPort("tcp", strconv.Itoa(int(infrastructure.RedisPort)))
+		if err != nil {
+			return err
 		}
 
 		containerInfo.ID, err = d.client.CreateContainer(
 			&container.Config{
 				Image: d.conf.Redis.Image,
 			},
-			nil,
+			&container.HostConfig{
+				PortBindings: nat.PortMap{
+					containerPort: []nat.PortBinding{
+						{
+							HostIP:   d.conf.Redis.IP,
+							HostPort: strconv.Itoa(int(d.conf.Redis.Port)),
+						},
+					},
+				},
+			},
 			d.conf.Docker.NetworkID,
 			infrastructure.RedisContainerName,
 		)
@@ -85,6 +98,10 @@ func (d *DeploymentManager) DeployGRPCServer() error {
 	containerID, err := d.client.CreateContainer(
 		&container.Config{
 			Image: d.conf.GoFlowServer.Image,
+			Cmd: []string{
+				"--broker-type", "redis",
+				"--broker-addr", fmt.Sprintf("%s:%d", infrastructure.RedisContainerName, infrastructure.RedisPort),
+			},
 		},
 		&container.HostConfig{
 			PortBindings: nat.PortMap{
@@ -158,25 +175,46 @@ func (d *DeploymentManager) DeployWorkerpools() error {
 			Image: d.conf.Workerpool.Image,
 			Cmd: []string{
 				"--broker-type", "redis",
-				"--broker-addr", fmt.Sprintf("%s:6379", infrastructure.RedisContainerName)
-				"--handlers-path", fmt.Sprintf("%s/compiled", "/app/handlers/compiled"),
+				"--broker-addr", fmt.Sprintf("%s:6379", infrastructure.RedisContainerName),
+				"--handlers-path", fmt.Sprintf("%s/compiled", infrastructure.WorkerpoolHandlersLocation),
 			},
 		},
 		hostConfig,
-		config.DockerNetworkID,
-		config.WorkerpoolContainerName,
+		d.conf.Docker.NetworkID,
+		infrastructure.WorkerpoolContainerName,
 	)
 
 	if err != nil {
 		return fmt.Errorf("failed to create workerpool container: %v", err)
 	}
 
-	if err := dockerClient.StartContainer(containerID); err != nil {
+	if err := d.client.StartContainer(containerID); err != nil {
 		return fmt.Errorf("error starting workerpool container: %v", err)
 	}
 
+	return nil
 }
 
 func (d *DeploymentManager) DestroyAll() error {
+	for _, containerID := range []string{
+		infrastructure.RedisContainerName,
+		infrastructure.GRPCServerContainerName,
+		infrastructure.WorkerpoolContainerName,
+	} {
+		fmt.Printf("Destroying container '%s'\n", containerID)
+
+		if err := d.client.DestroyContainer(containerID); err != nil {
+			return fmt.Errorf("failed to destroy container '%s': %v", containerID, err)
+		}
+	}
+
+	fmt.Println("Destroying Docker network...")
+
+	if err := d.client.DestroyNetwork(d.conf.Docker.NetworkID); err != nil {
+		return fmt.Errorf("failed to destroy network '%s': %v", d.conf.Docker.NetworkID, err)
+	}
+
+	fmt.Println("Done!")
+
 	return nil
 }

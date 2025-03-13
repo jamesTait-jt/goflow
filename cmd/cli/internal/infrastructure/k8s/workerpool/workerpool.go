@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/jamesTait-jt/goflow/cmd/cli/internal/config"
+	"github.com/jamesTait-jt/goflow/cmd/cli/internal/infrastructure"
 	"github.com/jamesTait-jt/goflow/cmd/cli/internal/infrastructure/k8s/redis"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -19,7 +20,6 @@ var (
 
 	volumeMountName            = "handlers-volume-mount"
 	pluginBuilderContainerName = "plugin-builder-container"
-	workerpoolContainerName    = "workerpool-container"
 	deploymentName             = "workerpool-deployment"
 
 	labels = map[string]string{
@@ -68,7 +68,7 @@ func Deployment(conf *config.Config) *acappsv1.DeploymentApplyConfiguration {
 		WithVolumeMounts(volumeMount)
 
 	workerpoolContainer := acapiv1.Container().
-		WithName(workerpoolContainerName).
+		WithName(infrastructure.WorkerpoolContainerName).
 		WithImage(conf.Workerpool.Image).
 		WithImagePullPolicy(apiv1.PullIfNotPresent).
 		WithVolumeMounts(volumeMount).

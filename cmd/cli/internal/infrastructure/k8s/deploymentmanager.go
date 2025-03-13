@@ -41,13 +41,18 @@ type DeploymentManager struct {
 	executor        deploymentExecutor
 }
 
-func NewDeploymentManager(conf *config.Config, logger log.Logger, clients resource.Clientset) *DeploymentManager {
+func NewDeploymentManager(conf *config.Config, logger log.Logger) (*DeploymentManager, error) {
+	clientset, err := NewClientset(conf.Kubernetes.ClusterURL, conf.Kubernetes.Namespace)
+	if err != nil {
+		return nil, err
+	}
+
 	return &DeploymentManager{
 		logger:          logger,
 		configMapper:    NewConfigMapper(conf),
-		resourceFactory: resource.NewFactory(clients),
+		resourceFactory: resource.NewFactory(clientset),
 		executor:        NewDeploymentExecutor(logger),
-	}
+	}, nil
 }
 
 func (d *DeploymentManager) DeployNamespace() error {

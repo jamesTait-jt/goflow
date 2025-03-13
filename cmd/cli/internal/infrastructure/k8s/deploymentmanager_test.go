@@ -7,40 +7,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jamesTait-jt/goflow/cmd/cli/internal/config"
 	"github.com/jamesTait-jt/goflow/cmd/cli/internal/infrastructure/k8s/resource"
 	"github.com/jamesTait-jt/goflow/pkg/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	acappsv1 "k8s.io/client-go/applyconfigurations/apps/v1"
 	acapiv1 "k8s.io/client-go/applyconfigurations/core/v1"
-	"k8s.io/client-go/kubernetes/fake"
 )
-
-func Test_NewDeploymentManager(t *testing.T) {
-	t.Run("Initialises a new deployment manager", func(t *testing.T) {
-		// Arrange
-		conf := new(config.Config)
-		logger := new(log.TestifyMock)
-
-		clientset := &Clients{
-			clientset: fake.NewSimpleClientset(),
-		}
-
-		expectedDeploymentManager := &DeploymentManager{
-			logger:          logger,
-			configMapper:    NewConfigMapper(conf),
-			resourceFactory: resource.NewFactory(clientset),
-			executor:        NewDeploymentExecutor(logger),
-		}
-
-		// Act
-		d := NewDeploymentManager(conf, logger, clientset)
-
-		// Assert
-		assert.Equal(t, d, expectedDeploymentManager)
-	})
-}
 
 func Test_DeploymentManager_DeployNamespace(t *testing.T) {
 	t.Run("Builds the namespace resource and executes the apply command", func(t *testing.T) {

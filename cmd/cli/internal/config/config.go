@@ -37,6 +37,8 @@ type Workerpool struct {
 type Redis struct {
 	Image    string `yaml:"image"`
 	Replicas int32  `yaml:"replicas"`
+	IP       string `yaml:"address"`
+	Port     int32  `yaml:"port"`
 }
 
 type Kubernetes struct {

@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"github.com/jamesTait-jt/goflow/cmd/cli/internal/config"
-	"github.com/jamesTait-jt/goflow/cmd/cli/internal/infrastructure/k8s"
 	"github.com/jamesTait-jt/goflow/cmd/cli/internal/service"
 	"github.com/jamesTait-jt/goflow/pkg/log"
 	"github.com/spf13/cobra"
@@ -19,14 +18,12 @@ var destroyCmd = &cobra.Command{
 
 		logger := log.NewConsoleLogger()
 
-		clientset, err := k8s.NewClientset(conf.Kubernetes.ClusterURL, conf.Kubernetes.Namespace)
+		deploymentManager, err := service.NewDeploymentManager(conf, logger)
 		if err != nil {
 			return err
 		}
 
-		kubeDeploymentManager := k8s.NewDeploymentManager(conf, logger, clientset)
-
-		deploymentService := service.NewDeploymentService(kubeDeploymentManager)
+		deploymentService := service.NewDeploymentService(deploymentManager)
 
 		return deploymentService.Destroy()
 	},

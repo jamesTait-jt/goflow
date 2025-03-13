@@ -3,6 +3,7 @@ package broker
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -95,6 +96,9 @@ func (rb *RedisBroker[T]) pollRedis(ctx context.Context) {
 
 	for {
 		redisResult, err := rb.client.BRPop(ctx, 0, rb.redisQueueKey).Result()
+		fmt.Println("GOT RESULT IN POLL")
+		fmt.Println(redisResult)
+		fmt.Println(err)
 		if err != nil {
 			if errors.Is(err, context.Canceled) {
 				return
